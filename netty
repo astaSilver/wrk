@@ -1,0 +1,146 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Scanner;
+
+public class app {
+
+    private static final String FILE_NAME = "books.txt";
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+    private static ArrayList<Book> books = new ArrayList<>();
+
+    public static void main(String[] args) {
+        loadBooksFromFile();
+
+        Scanner scanner = new Scanner(System.in);
+        int choice;
+
+        do {
+            displayMenu();
+            System.out.print("Enter your choice: ");
+            choice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+
+            switch (choice) {
+                case 1:
+                    displayBooksInfo();
+                    break;
+                case 2:
+                    displayBooksByCondition(scanner);
+                    break;
+                case 3:
+                    System.out.println("Exiting the application.");
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please enter a valid option.");
+            }
+        } while (choice != 3);
+
+        scanner.close();
+    }
+
+    private static void displayMenu() {
+        System.out.println("\nMenu:");
+        System.out.println("1. Display information of all books");
+        System.out.println("2. Display books by condition");
+        System.out.println("3. Exit");
+    }
+
+    private static void loadBooksFromFile() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 4) {
+                    String name = parts[0].trim();
+                    int yearPublished = Integer.parseInt(parts[1].trim());
+                    String condition = parts[2].trim();
+                    Date dateBought = dateFormat.parse(parts[3].trim());
+                    books.add(new Book(name, yearPublished, condition, dateBought));
+                }
+            }
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void displayBooksInfo() {
+        if (books.isEmpty()) {
+            System.out.println("No books available.");
+            return;
+        }
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter a date (yyyy-MM-dd): ");
+        String dateString = scanner.nextLine();
+
+        try {
+            Date currentDate = dateFormat.parse(dateString);
+            for (Book book : books) {
+                long daysInStore = book.getDaysInStore(currentDate);
+                System.out.println("Book: " + book.getName() +
+                        ", Year Published: " + book.getYearPublished() +
+                        ", Condition: " + book.getCondition() +
+                        ", Days in Store: " + daysInStore);
+            }
+        } catch (ParseException e) {
+            System.out.println("Invalid date format. Please enter date in yyyy-MM-dd format.");
+        }
+    }
+
+    private static void displayBooksByCondition(Scanner scanner) {
+        if (books.isEmpty()) {
+            System.out.println("No books available.");
+            return;
+        }
+
+        System.out.print("Enter the condition of the book (New/Used/Bad condition): ");
+        String condition = scanner.nextLine();
+
+        for (Book book : books) {
+            if (book.getCondition().equalsIgnoreCase(condition)) {
+                System.out.println("Book: " + book.getName() + ", Year Published: " + book.getYearPublished());
+            }
+        }
+    }
+
+    private static class Book {
+        private String name;
+        private int yearPublished;
+        private String condition;
+        private Date dateBought;
+
+        public Book(String name, int yearPublished, String condition, Date dateBought) {
+            this.name = name;
+            this.yearPublished = yearPublished;
+            this.condition = condition;
+            this.dateBought = dateBought;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public int getYearPublished() {
+            return yearPublished;
+        }
+
+        public String getCondition() {
+            return condition;
+        }
+
+        public Date getDateBought() {
+            return dateBought;
+        }
+
+        public long getDaysInStore(Date currentDate) {
+            long diff = currentDate.getTime() - dateBought.getTime();
+            return diff / (24 * 60 * 60 * 1000);
+        }
+    }
+}
